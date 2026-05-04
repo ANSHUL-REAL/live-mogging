@@ -441,13 +441,17 @@ function setAiScore(side,score){
 
 /* Run detection loop every 700ms */
 let detectionInterval=null;
+const avgScores={left:[],right:[]}; // accumulate during round for winner calc
+
 async function runDetect(side,videoEl){
   const det=await faceapi
     .detectSingleFace(videoEl,new faceapi.TinyFaceDetectorOptions({scoreThreshold:.28,inputSize:224}))
     .withFaceLandmarks(true);
   if(det){
     lastLandmarks[side]=det.landmarks;
-    setAiScore(side,computeScore(det.landmarks));
+    const sc=computeScore(det.landmarks);
+    setAiScore(side,sc);
+    avgScores[side].push(sc); // accumulate for round winner
   }else{
     lastLandmarks[side]=null;
     setAiScore(side,null);
@@ -492,19 +496,88 @@ function setRoomVisible(v){
   joinScreen.classList.toggle('hidden',v);roomScreen.classList.toggle('hidden',!v);
   if(v)document.dispatchEvent(new Event('roomEntered'));
 }
+/* ══════════════════════════════════════════
+   ROUND TIMER
+══════════════════════════════════════════ */
+const roundTimer=$('roundTimer');
+const timerCount=$('timerCount');
+const timerArc=$('timerArc');
+const ROUND_SECS=30;
+const CIRC=163; // 2*pi*26
+let roundTimerInterval=null;
+
+function startRoundTimer(){
+  stopRoundTimer();
+  avgScores.left=[];avgScores.right=[];
+  let secs=ROUND_SECS;
+  roundTimer.classList.remove('hidden');
+  timerCount.textContent=secs;
+  timerArc.style.strokeDashoffset=0;
+  timerArc.classList.remove('urgent');
+  roundTimerInterval=setInterval(()=>{
+    secs--;
+    timerCount.textContent=secs;
+    timerArc.style.strokeDashoffset=CIRC*(1-(secs/ROUND_SECS));
+    if(secs<=10)timerArc.classList.add('urgent');
+    if(secs<=0){
+      stopRoundTimer();
+      // Determine winner by average AI score
+      const la=avgScores.left.length?avgScores.left.reduce((a,b)=>a+b,0)/avgScores.left.length:0;
+      const ra=avgScores.right.length?avgScores.right.reduce((a,b)=>a+b,0)/avgScores.right.length:0;
+      const lName=activePair.left?.name||'Left';
+      const rName=activePair.right?.name||'Right';
+      if(la>ra) showResult({name:lName,score:la,side:'left'});
+      else if(ra>la) showResult({name:rName,score:ra,side:'right'});
+      else showResult(null);
+    }
+  },1000);
+}
+function stopRoundTimer(){
+  clearInterval(roundTimerInterval);roundTimerInterval=null;
+  roundTimer.classList.add('hidden');
+}
+
 function showResult(winner){
-  resultTitle.textContent=winner?`${winner.name} Mogs! 👑`:"It's a Tie!";
-  resultDesc.textContent=winner?'The crowd has spoken.':'Both mog equally hard.';
+  const s=winner?Math.round(winner.score):0;
+  $('resultTitle').textContent=winner?`${winner.name} Mogs! 👑`:"It's a Tie!";
+  $('resultScore').textContent=winner?(s/10).toFixed(1)+' / 10':'';
+  $('resultTerm').textContent=winner?getMogTerm(s):'';
+  $('resultCrown').textContent=winner?'👑':'🤝';
+  $('resultDesc').textContent=winner?'AI analysis complete.':'Both faces equally matched.';
   resultOverlay.classList.remove('hidden');
 }
-resultClose.addEventListener('click',()=>resultOverlay.classList.add('hidden'));
+resultClose.addEventListener('click',()=>{
+  resultOverlay.classList.add('hidden');
+  stopRoundTimer();
+});
+// nextRoundBtn inside win screen
+const nextRoundBtn2=$('nextRoundBtn2');
+if(nextRoundBtn2)nextRoundBtn2.addEventListener('click',()=>{
+  resultOverlay.classList.add('hidden');
+  stopRoundTimer();
+  if(nextRoundBtn&&!nextRoundBtn.disabled)nextRoundBtn.click();
+});
 
 /* ══════════════════════════════════════════
    MEDIA
 ══════════════════════════════════════════ */
 async function ensureMedia(){
   if(localStream)return localStream;
-  localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  try{
+    localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  }catch(e){
+    // Try video-only as fallback (mic might be blocked)
+    if(e.name==='NotFoundError'||e.name==='OverconstrainedError'){
+      try{localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});}catch(e2){throw e2;}
+    } else {
+      const msg=
+        e.name==='NotAllowedError'?'Camera blocked — allow camera in browser settings':
+        e.name==='NotReadableError'?'Camera in use by another app — close it and retry':
+        e.name==='SecurityError'?'HTTPS required for camera access':
+        'Camera error: '+e.message;
+      const err=new Error(msg);err.name=e.name;throw err;
+    }
+  }
   localVideo.srcObject=localStream;
   localVideo.play().catch(()=>{});
   return localStream;
@@ -608,7 +681,7 @@ function renderRoom(room){
 
   room.users.forEach(u=>{if(u.id!==selfId)createPeer(u.id,selfId>u.id);});
   renderVideos();
-  if(ok)startDetection();else stopDetection();
+  if(ok){startDetection();startRoundTimer();}else{stopDetection();stopRoundTimer();}
 }
 
 /* ══════════════════════════════════════════
@@ -635,14 +708,14 @@ async function joinRoom(roomId){
 
 createRoomBtn.addEventListener('click',()=>{
   if(!nameInput.reportValidity())return;
-  socket.emit('create-room',({roomId})=>{roomInput.value=roomId;joinRoom(roomId).catch(()=>setErr('Camera permission required.'));});
+  socket.emit('create-room',({roomId})=>{roomInput.value=roomId;joinRoom(roomId).catch(e=>setErr(e.message||'Camera error.'));});
 });
 
 joinForm.addEventListener('submit',e=>{
   e.preventDefault();
   const rid=roomInput.value.trim();
-  if(!rid)socket.emit('create-room',({roomId})=>{roomInput.value=roomId;joinRoom(roomId).catch(()=>setErr('Camera permission required.'));});
-  else joinRoom(rid).catch(()=>setErr('Camera permission required.'));
+  if(!rid)socket.emit('create-room',({roomId})=>{roomInput.value=roomId;joinRoom(roomId).catch(e=>setErr(e.message||'Camera error.'));});
+  else joinRoom(rid).catch(e=>setErr(e.message||'Camera error.'));
 });
 
 copyRoomBtn.addEventListener('click',async()=>{
@@ -659,7 +732,12 @@ function castVote(side){
 voteLeftBtn.addEventListener('click',()=>castVote('left'));
 voteRightBtn.addEventListener('click',()=>castVote('right'));
 
-nextRoundBtn.addEventListener('click',()=>{hasVoted=false;socket.emit('next-round');ema.left=null;ema.right=null;});
+nextRoundBtn.addEventListener('click',()=>{
+  hasVoted=false;
+  socket.emit('next-round');
+  ema.left=null;ema.right=null;
+  avgScores.left=[];avgScores.right=[];
+});
 leaveBtn.addEventListener('click',()=>location.assign('/'));
 
 /* ══════════════════════════════════════════
@@ -671,7 +749,20 @@ socket.on('user-joined',u=>{if(localStream)createPeer(u.id,selfId>u.id);showToas
 socket.on('user-left',id=>{peers.get(id)?.close();peers.delete(id);remoteStreams.delete(id);renderVideos();});
 socket.on('signal',p=>handleSignal(p).catch(()=>showToast('Video signal failed.')));
 socket.on('room-state',renderRoom);
-socket.on('round-result',({winner,votes})=>{updateVoteBars(votes.left,votes.right);showResult(winner);});
+socket.on('round-result',({winner,votes})=>{
+  updateVoteBars(votes.left,votes.right);
+  // Only show server result if timer hasn't already shown it
+  if(resultOverlay.classList.contains('hidden')){
+    if(winner){
+      // Use the last EMA score for the winner for the display
+      const scoreSide = (winner.id === activePair.left?.id) ? 'left' : 'right';
+      const score = ema[scoreSide] || 50;
+      showResult({name: winner.name, score});
+    } else {
+      showResult(null);
+    }
+  }
+});
 
 /* Auto-fill room from URL */
 const rp=location.pathname.match(/^\/room\/([^/]+)/)?.[1];

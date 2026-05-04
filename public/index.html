@@ -153,6 +153,14 @@
     </div><!-- /stage -->
 
     <div class="round-bar">
+      <!-- 30-second round timer -->
+      <div id="roundTimer" class="round-timer hidden">
+        <svg class="timer-ring" viewBox="0 0 60 60">
+          <circle class="timer-track" cx="30" cy="30" r="26"/>
+          <circle id="timerArc" class="timer-arc" cx="30" cy="30" r="26"/>
+        </svg>
+        <span id="timerCount" class="timer-count">30</span>
+      </div>
       <button id="nextRoundBtn" class="btn ghost sm">↻ Next Round</button>
     </div>
 
@@ -195,13 +203,76 @@
   </div>
 </div>
 
-<!-- Result Overlay -->
+<!-- Win Screen Overlay -->
 <div id="resultOverlay" class="result-overlay hidden">
-  <div class="result-card">
-    <div class="result-crown">👑</div>
-    <h2 id="resultTitle"></h2>
-    <p id="resultDesc"></p>
-    <button id="resultClose" class="btn primary">Continue</button>
+  <div class="result-bg-blur"></div>
+
+  <!-- Targeting UI SVG -->
+  <div class="result-stage">
+    <div class="targeting-wrap">
+      <svg class="targeting-svg" viewBox="0 0 237 220" xmlns="http://www.w3.org/2000/svg">
+        <!-- top V-lines -->
+        <line class="tgt-line tl" x1="0.177" y1="0.823" x2="74.177" y2="74.823" stroke="white" stroke-width="0.5"/>
+        <line class="tgt-line tc" x1="74" y1="74.75" x2="164" y2="74.75" stroke="white" stroke-width="0.5"/>
+        <line class="tgt-line tr" x1="236.822" y1="0.824" x2="163.822" y2="74.824" stroke="white" stroke-width="0.5"/>
+        <!-- bottom V-lines -->
+        <line class="tgt-line bl" x1="0.177" y1="219.177" x2="74.177" y2="145.177" stroke="white" stroke-width="0.5"/>
+        <line class="tgt-line bc" x1="74" y1="145.25" x2="164" y2="145.25" stroke="white" stroke-width="0.5"/>
+        <line class="tgt-line br" x1="236.822" y1="219.176" x2="163.822" y2="145.176" stroke="white" stroke-width="0.5"/>
+        <!-- outer circle -->
+        <g transform="translate(29,22)">
+          <circle class="tgt-circ outer" cx="89.5" cy="87.5" r="80" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.75"/>
+          <circle class="tgt-circ inner1" cx="89.5" cy="87.5" r="72" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.5"/>
+          <circle class="tgt-circ inner2" cx="89.5" cy="87.5" r="58" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+          <!-- chamber inserts left -->
+          <rect class="tgt-dot d7" x="3" y="84" width="1" height="9" fill="white"/>
+          <!-- chamber inserts right -->
+          <rect class="tgt-dot d8" x="174" y="84" width="1" height="9" fill="white"/>
+          <!-- center bracket corners -->
+          <path class="tgt-bracket" d="M63 104 L51 104 L47 100 M63 71 L51 71 L47 75 M116 104 L128 104 L132 100 M116 71 L128 71 L132 75" fill="none" stroke="white" stroke-width="0.6"/>
+        </g>
+        <!-- L-dots top-left -->
+        <circle class="tgt-dot d1" cx="78" cy="66" r=".75" fill="white"/>
+        <circle class="tgt-dot d2" cx="78" cy="70" r=".75" fill="white"/>
+        <circle class="tgt-dot d3" cx="82" cy="70" r=".75" fill="white"/>
+        <!-- L-dots top-right -->
+        <circle class="tgt-dot d1" cx="159" cy="66" r=".75" fill="white"/>
+        <circle class="tgt-dot d2" cx="155" cy="70" r=".75" fill="white"/>
+        <circle class="tgt-dot d3" cx="159" cy="70" r=".75" fill="white"/>
+        <!-- L-dots bottom-left -->
+        <circle class="tgt-dot d1" cx="78" cy="154" r=".75" fill="white"/>
+        <circle class="tgt-dot d2" cx="78" cy="150" r=".75" fill="white"/>
+        <circle class="tgt-dot d3" cx="82" cy="150" r=".75" fill="white"/>
+        <!-- L-dots bottom-right -->
+        <circle class="tgt-dot d1" cx="159" cy="154" r=".75" fill="white"/>
+        <circle class="tgt-dot d2" cx="155" cy="150" r=".75" fill="white"/>
+        <circle class="tgt-dot d3" cx="159" cy="150" r=".75" fill="white"/>
+        <!-- 2x2 grids -->
+        <circle class="tgt-dot d4" cx="15" cy="107" r=".75" fill="white"/>
+        <circle class="tgt-dot d5" cx="20" cy="107" r=".75" fill="white"/>
+        <circle class="tgt-dot d4" cx="15" cy="112" r=".75" fill="white"/>
+        <circle class="tgt-dot d5" cx="20" cy="112" r=".75" fill="white"/>
+        <circle class="tgt-dot d4" cx="217" cy="107" r=".75" fill="white"/>
+        <circle class="tgt-dot d5" cx="222" cy="107" r=".75" fill="white"/>
+        <circle class="tgt-dot d4" cx="217" cy="112" r=".75" fill="white"/>
+        <circle class="tgt-dot d5" cx="222" cy="112" r=".75" fill="white"/>
+      </svg>
+
+      <!-- Content in the center of the targeting circle -->
+      <div class="result-center">
+        <div class="result-crown-icon" id="resultCrown">👑</div>
+        <h2 class="result-winner-name" id="resultTitle"></h2>
+        <div class="result-score-big" id="resultScore"></div>
+        <div class="result-mog-term" id="resultTerm"></div>
+        <p class="result-sub" id="resultDesc"></p>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="result-actions">
+      <button id="nextRoundBtn2" class="res-btn res-continue">⟳ Next Round</button>
+      <button id="resultClose" class="res-btn res-exit">✕ Leave Room</button>
+    </div>
   </div>
 </div>
 
