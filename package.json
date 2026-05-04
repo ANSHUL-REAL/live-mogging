@@ -1,0 +1,22 @@
+{
+  "name": "live-mogging-web-app",
+  "version": "1.0.0",
+  "description": "Private-room live video and voting app using Socket.IO and WebRTC.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "webrtc",
+    "socket.io",
+    "live-video",
+    "voting"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Live Mogging — AI Face-Off</title>
+  <meta name="description" content="Real-time AI-powered face scoring. Join a private room and let the algorithm decide who mogs."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+
+<!-- ═══════ JOIN / HERO ═══════ -->
+<section id="joinScreen" class="join-screen">
+  <canvas id="heroCanvas" class="hero-canvas"></canvas>
+  <div class="hero-overlay"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      AI-Powered · Real-Time · WebRTC
+    </div>
+
+    <h1 class="hero-title">
+      <span class="title-top">Live</span>
+      <span class="title-bot">Mogging</span>
+    </h1>
+    <p class="hero-sub">AI scores your face live. The crowd votes. <em>Only one can mog.</em></p>
+
+    <form id="joinForm" class="join-card">
+      <div class="field">
+        <label for="nameInput">Your Name</label>
+        <input id="nameInput" maxlength="24" autocomplete="name" placeholder="Display name" required/>
+      </div>
+      <div class="field">
+        <label for="roomInput">Room Code <small>(empty = create new)</small></label>
+        <input id="roomInput" maxlength="12" autocomplete="off" placeholder="e.g. ABC123"/>
+      </div>
+      <div class="join-actions">
+        <button type="button" id="createRoomBtn" class="btn ghost">Create Room</button>
+        <button type="submit" class="btn primary">
+          Enter&nbsp;→
+        </button>
+      </div>
+      <p id="joinError" class="error" role="alert"></p>
+    </form>
+
+    <div class="pills">
+      <span>🎥 Live Video</span>
+      <span>🤖 AI Score</span>
+      <span>🗳️ Live Votes</span>
+      <span>🏆 Scoreboard</span>
+      <span>🔐 Private Rooms</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ ROOM ═══════ -->
+<section id="roomScreen" class="room-screen hidden">
+  <div class="room-bg"></div>
+
+  <div class="room-shell">
+    <!-- Header -->
+    <header class="room-header">
+      <div class="brand">
+        <span class="brand-logo">LM</span>
+        <div>
+          <span class="eyebrow">Live Mogging</span>
+          <button id="copyRoomBtn" class="room-code-btn"></button>
+        </div>
+      </div>
+      <div class="hdr-right">
+        <span class="conn-pill"><span class="conn-dot"></span><span id="connStatus">Connecting</span></span>
+        <button id="leaveBtn" class="btn ghost sm">Leave</button>
+      </div>
+    </header>
+
+    <!-- Stage -->
+    <div class="stage">
+
+      <!-- LEFT -->
+      <div class="side">
+        <div class="video-card" id="leftCard">
+          <video id="leftVideo" autoplay playsinline></video>
+          <canvas id="leftTracker" class="tracker"></canvas>
+
+          <!-- AI Score Overlay -->
+          <div class="ai-score-overlay" id="leftScoreBox">
+            <div class="ai-label">AI MOG SCORE</div>
+            <div class="ai-number" id="leftAiNum">—</div>
+            <div class="ai-bar-track"><div class="ai-bar-fill" id="leftAiBar" style="width:0%"></div></div>
+            <div class="ai-status" id="leftAiStatus">ANALYZING…</div>
+          </div>
+
+          <div class="winner-ring" id="leftRing"></div>
+        </div>
+
+        <!-- Vote bar below video -->
+        <div class="vote-bar" id="leftVoteBar">
+          <div class="vote-fill left-fill" id="leftFill" style="width:0%"></div>
+          <span class="vote-txt" id="leftVotePct">0%</span>
+          <span class="vote-count" id="leftVotes">0 votes</span>
+        </div>
+
+        <div class="name-row">
+          <span class="comp-name" id="leftName">Waiting…</span>
+          <span class="mog-badge hidden" id="leftBadge">🔥 MOGGING</span>
+        </div>
+
+        <button id="voteLeftBtn" class="vote-btn left-btn" disabled>
+          👈 Left Mogs
+        </button>
+      </div>
+
+      <!-- VS -->
+      <div class="vs-col">
+        <div class="vs-ring">VS</div>
+        <div class="vs-line"></div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="side">
+        <div class="video-card" id="rightCard">
+          <video id="rightVideo" autoplay playsinline></video>
+          <canvas id="rightTracker" class="tracker"></canvas>
+
+          <div class="ai-score-overlay" id="rightScoreBox">
+            <div class="ai-label">AI MOG SCORE</div>
+            <div class="ai-number" id="rightAiNum">—</div>
+            <div class="ai-bar-track"><div class="ai-bar-fill" id="rightAiBar" style="width:0%"></div></div>
+            <div class="ai-status" id="rightAiStatus">ANALYZING…</div>
+          </div>
+
+          <div class="winner-ring" id="rightRing"></div>
+        </div>
+
+        <div class="vote-bar" id="rightVoteBar">
+          <div class="vote-fill right-fill" id="rightFill" style="width:0%"></div>
+          <span class="vote-txt" id="rightVotePct">0%</span>
+          <span class="vote-count" id="rightVotes">0 votes</span>
+        </div>
+
+        <div class="name-row">
+          <span class="comp-name" id="rightName">Waiting…</span>
+          <span class="mog-badge hidden" id="rightBadge">🔥 MOGGING</span>
+        </div>
+
+        <button id="voteRightBtn" class="vote-btn right-btn" disabled>
+          Right Mogs 👉
+        </button>
+      </div>
+    </div><!-- /stage -->
+
+    <div class="round-bar">
+      <button id="nextRoundBtn" class="btn ghost sm">↻ Next Round</button>
+    </div>
+
+    <!-- Lower -->
+    <div class="lower">
+      <div class="panel">
+        <div class="panel-hdr">👤 Preview</div>
+        <video id="localVideo" autoplay muted playsinline class="local-vid"></video>
+      </div>
+      <div class="panel">
+        <div class="panel-hdr">🏆 Scoreboard</div>
+        <ol id="scoreboard" class="score-list"></ol>
+      </div>
+      <div class="panel">
+        <div class="panel-hdr">👥 In Room</div>
+        <ul id="userList" class="user-list"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- Loading / Join Transition Overlay -->
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <canvas id="glitchCanvas" class="glitch-canvas"></canvas>
+  <div class="glitch-vignette"></div>
+  <div class="glitch-glow"></div>
+  <div class="loading-content">
+    <div class="loader-5"><span></span></div>
+    <p class="loading-stage" id="loadingStage">Initializing…</p>
+    <div class="ascii-bar-wrap">
+      <span class="ascii-br">[</span>
+      <span id="asciiBar">░░░░░░░░░░░░░░░░░░░░</span>
+      <span class="ascii-br">]</span>
+      <span id="asciiPct" class="ascii-pct">0%</span>
+    </div>
+    <p class="loading-sub">Establishing secure connection…</p>
+  </div>
+</div>
+
+<!-- Result Overlay -->
+<div id="resultOverlay" class="result-overlay hidden">
+  <div class="result-card">
+    <div class="result-crown">👑</div>
+    <h2 id="resultTitle"></h2>
+    <p id="resultDesc"></p>
+    <button id="resultClose" class="btn primary">Continue</button>
+  </div>
+</div>
+
+<!-- face-api.js from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/dist/face-api.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
