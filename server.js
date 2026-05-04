@@ -5,8 +5,12 @@ const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+  transports: ['websocket', 'polling']
+});
 const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';  // Required for Railway / cloud hosting
 const rooms = new Map();
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -174,6 +178,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () =>
-  console.log(`Live Mogging running → http://localhost:${PORT}`)
+server.listen(PORT, HOST, () =>
+  console.log(`Live Mogging running → http://${HOST}:${PORT}`)
 );
