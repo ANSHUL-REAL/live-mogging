@@ -691,6 +691,12 @@ async function joinRoom(roomId){
   setErr('');hasVoted=false;
   showLoading();
   try{
+    // HTTPS check — navigator.mediaDevices is usually undefined on non-localhost HTTP
+    if (location.protocol === 'http:' && location.hostname !== 'localhost') {
+      hideLoading();
+      setErr('HTTPS is required for camera access. Please use the secure URL.');
+      return;
+    }
     await ensureMedia();
   }catch(e){
     hideLoading();
@@ -719,8 +725,10 @@ joinForm.addEventListener('submit',e=>{
 });
 
 copyRoomBtn.addEventListener('click',async()=>{
-  try{await navigator.clipboard.writeText(`${location.origin}/room/${currentRoomId}`);}catch(_){}
+  const url = `${location.origin}/room/${currentRoomId}`;
+  try{await navigator.clipboard.writeText(url);}catch(_){}
   showToast('📋 Invite link copied!');
+  console.log('Invite URL:', url);
 });
 
 /* ── Vote ───────────────────────────────── */

@@ -253,3 +253,88 @@ button,input{font:inherit}
 @keyframes l5-4{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,27px,0) scale(.5)}100%{transform:translate3d(0,0,0) scale(1)}}
 .loader-5 span::after{top:auto;left:0;bottom:0;right:0;width:9px;height:9px;animation:l5-5 2s cubic-bezier(.77,0,.175,1) infinite}
 @keyframes l5-5{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,-27px,0) scale(.5)}100%{transform:translate3d(0,0,0) scale(1)}}
+
+/* ══ FOOTER ═══════════════════════════════════ */
+.app-footer {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  padding: 30px 20px;
+  background: linear-gradient(to bottom, transparent, rgba(6,5,15,0.8));
+  margin-top: auto;
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 25px;
+}
+
+.footer-left p {
+  font-size: 0.9rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.footer-left strong {
+  color: var(--accent2);
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.footer-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.footer-link:hover {
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.footer-link .icon {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+}
+
+.footer-link:hover .icon {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.footer-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+}
+
+.discord-id {
+  color: var(--accent);
+}
+
+@media(max-width: 640px) {
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  .footer-right {
+    gap: 15px;
+  }
+}
